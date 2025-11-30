@@ -684,15 +684,18 @@ _client: Optional[MCPClient] = None
 def get_client(base_url: Optional[str] = None) -> MCPClient:
     """
     Get or create the MCP client singleton.
-    
+
     Args:
         base_url: Optional URL override. If None, checks MCP_SERVER_URL env var,
-                 then defaults to http://127.0.0.1:7861
+                  then defaults to the HuggingFace Space URL
     """
     global _client
     if _client is None:
         if base_url is None:
             import os
-            base_url = os.environ.get("MCP_SERVER_URL", "http://127.0.0.1:7861")
+            base_url = os.environ.get(
+                "MCP_SERVER_URL", 
+                "https://mcp-1st-birthday-quantumarchitect-mcp.hf.space"
+            )
         _client = MCPClient(base_url)
     return _client
