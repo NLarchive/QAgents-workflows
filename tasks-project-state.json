@@ -1,0 +1,149 @@
+{
+  "project": "QAgents-Workflows",
+  "version": "0.8.0",
+  "description": "Multi-agent quantum circuit optimization system with multi-model fallback",
+  "last_updated": "2024-11-28",
+  "status": "BLACKBOARD_FIXED_QUASAR_ADDED",
+  "notes": "Fixed BLACKBOARD NoneType errors. Added QUASAR orchestrator with tiered verification. Added VERY_HARD problems. Mini test shows NAKED 3.3s and BLACKBOARD 15s both pass EASY.",
+
+  "comprehensive_test_results": {
+    "test_date": "2024-11-29",
+    "previous_results": {
+      "naked": {"success": "9/9 (100%)", "avg_time_ms": 3929},
+      "guided": {"success": "7/9 (78%)", "avg_time_ms": 23120},
+      "blackboard": {"success": "2/9 (22%)", "avg_time_ms": 13507}
+    },
+    "latest_test_20241129": {
+      "problem": "HARD - Deutsch Algorithm",
+      "naked": {"success": true, "time_ms": 3914, "gates": 5},
+      "quasar": {"success": true, "time_ms": 7254, "gates": 5},
+      "hybrid": {"success": true, "time_ms": 7181, "gates": 5},
+      "blackboard": {"success": true, "time_ms": 20915, "gates": 2},
+      "result": "ALL 4 MODES PASSED"
+    },
+    "very_hard_test": {
+      "problem": "VERY_HARD - 4-Qubit QFT",
+      "naked": {"success": true, "time_ms": 4473, "gates": 12},
+      "quasar": {"success": true, "time_ms": 7811, "gates": 12},
+      "hybrid": "interrupted - rate limiting",
+      "blackboard": "interrupted - rate limiting"
+    }
+  },
+
+  "fixes_applied_20241128": {
+    "blackboard_null_safety": {
+      "file": "orchestrators/orchestrator.py",
+      "changes": ["Added try/except in agent execution loop", "Added null-checking for action and result"]
+    },
+    "llm_adapter_null_safety": {
+      "file": "agents/llm_adapter.py",
+      "changes": ["Fixed response.text None handling", "Fixed _estimate_tokens with null-safe len()"]
+    }
+  },
+
+  "new_orchestrators": {
+    "quasar": {
+      "file": "orchestrators/quasar_orchestrator.py",
+      "description": "Tiered verification orchestrator (QUASAR-lite)",
+      "tiers": [
+        "Tier 1: Syntax validation via MCP",
+        "Tier 2: Circuit analysis (depth, gates)",
+        "Tier 3: Simulation verification",
+        "Tier 4: Semantic correctness"
+      ]
+    },
+    "hybrid": {
+      "description": "NAKED first, QUASAR fallback on failure"
+    }
+  },
+
+  "new_problems": {
+    "very_hard_difficulty": [
+      "4-Qubit QFT",
+      "5-Qubit Entanglement Chain",
+      "Simon's Algorithm (2-bit)",
+      "Quantum Adder (1+1=10)"
+    ]
+  },
+
+  "model_cascade": {
+    "preferred_model": "gemini-2.5-flash-lite",
+    "models": [
+      {"name": "gemma-3-27b-it", "rpd": 14400, "priority": 1},
+      {"name": "gemini-2.5-flash-lite", "rpd": 1000, "priority": 2, "default": true},
+      {"name": "gemini-2.5-flash", "rpd": 250, "priority": 3},
+      {"name": "gemini-2.0-flash", "rpd": 200, "priority": 4},
+      {"name": "gemini-2.5-pro", "rpd": 50, "priority": 5}
+    ]
+  },
+
+  "architectures": {
+    "naked": {
+      "description": "Direct LLM-to-QASM generation",
+      "status": "PRODUCTION_READY",
+      "success_rate": "100%",
+      "recommended": true
+    },
+    "guided": {
+      "description": "4-agent pipeline (Analyzer, Designer, Generator, Validator)",
+      "status": "DEPRECATED",
+      "success_rate": "78%",
+      "note": "Replaced by QUASAR"
+    },
+    "blackboard": {
+      "description": "Event-driven multi-agent blackboard",
+      "status": "FIXED",
+      "success_rate": "~100% (needs full retest)",
+      "note": "NoneType errors fixed, ~5x slower than NAKED"
+    },
+    "quasar": {
+      "description": "Tiered verification with MCP tools",
+      "status": "NEW",
+      "file": "orchestrators/quasar_orchestrator.py"
+    },
+    "hybrid": {
+      "description": "NAKED first, QUASAR fallback",
+      "status": "NEW"
+    }
+  },
+
+  "new_files_created": [
+    {"file": "prompts/optimized_prompts.py", "purpose": "Enhanced prompts for NAKED mode"},
+    {"file": "orchestrators/router.py", "purpose": "Difficulty-aware orchestrator selection"},
+    {"file": "tests/comprehensive_test.py", "purpose": "Full diagnostic test script"},
+    {"file": "docs/COMPREHENSIVE_TEST_ANALYSIS.md", "purpose": "Analysis of all test results"},
+    {"file": "docs/STRATEGIC_IMPROVEMENTS.md", "purpose": "Improvement roadmap based on findings"},
+    {"file": "docs/PROJECT_ANALYSIS_20251128.md", "purpose": "Deep project analysis"}
+  ],
+
+  "recommendations": {
+    "immediate": [
+      "Adopt NAKED mode for production - 100% success, fastest, most efficient",
+      "Fix BLACKBOARD null-checking or deprecate entirely",
+      "Integrate optimized_prompts.py into NAKED orchestrator"
+    ],
+    "short_term": [
+      "Add circuit quality scoring beyond gate count",
+      "Improve GUIDED generator for hard problems",
+      "Implement hybrid: NAKED first, GUIDED on failure"
+    ],
+    "long_term": [
+      "Auto-select mode based on problem difficulty",
+      "MCP validation integration for correctness verification",
+      "Cost-aware orchestrator selection"
+    ]
+  },
+
+  "usage": {
+    "prerequisites": [
+      "Start MCP server: python QuantumArchitect-MCP/app.py",
+      "Set GOOGLE_API_KEY environment variable",
+      "Activate venv: & .venv/Scripts/Activate.ps1"
+    ],
+    "commands": {
+      "comprehensive_test": "python tests/comprehensive_test.py",
+      "quality_eval": "python tests/run_quality_eval.py --mode all --difficulty all",
+      "quick_test": "python tests/run_quality_eval.py --quick"
+    }
+  }
+}

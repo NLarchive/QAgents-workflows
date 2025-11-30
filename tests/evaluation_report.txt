@@ -1,0 +1,54 @@
+====================================================================================================
+QUANTUM AGENT SYSTEM COMPARATIVE EVALUATION REPORT
+Generated: 2025-11-28T18:38:30.068424
+Number of runs per problem: 1
+====================================================================================================
+
+SUMMARY BY MODE (with Cost Analysis)
+----------------------------------------------------------------------------------------------------
+Mode          Success%   Time(ms)  Quality  LLM Req     Tokens  Cost/Qual
+----------------------------------------------------------------------------------------------------
+blackboard       66.7%     14612     0.00        5       2709        N/A
+guided          100.0%     23975     0.00        8       4481        N/A
+naked           100.0%      5251     0.00        3        901        N/A
+
+
+COST EFFICIENCY ANALYSIS
+------------------------------------------------------------
+
+Expected LLM Requests per problem:
+  - Naked:      1 (single direct LLM call)
+  - Guided:     4 (one per agent: Architect, Builder, Validator, Scorer)
+  - Blackboard: 8-12 (multiple collaborative rounds)
+
+Cost-per-Quality interpretation:
+  - Lower is better (less resources for same quality)
+  - Naked has lowest cost but tests raw LLM capability
+  - Blackboard has highest cost but best quality potential
+
+DETAILED RESULTS BY PROBLEM
+----------------------------------------------------------------------------------------------------
+
+Phase Flip State (easy_001)
+--------------------------------------------------
+Mode          Success   Time(ms)  Quality    LLM   Tokens
+blackboard       100%     11292     0.00      2      955
+guided           100%     31284     0.00      4     2177
+naked            100%      6894     0.00      1      293
+
+Entanglement Generation (easy_002)
+--------------------------------------------------
+Mode          Success   Time(ms)  Quality    LLM   Tokens
+blackboard         0%     16832     0.00      1      529
+guided           100%     20431     0.00      2     1046
+naked            100%      1929     0.00      1      305
+
+X-Basis Measurement Prep (easy_003)
+--------------------------------------------------
+Mode          Success   Time(ms)  Quality    LLM   Tokens
+blackboard       100%     15713     0.00      2     1225
+guided           100%     20209     0.00      2     1258
+naked            100%      6930     0.00      1      303
+
+====================================================================================================
+END OF REPORT
