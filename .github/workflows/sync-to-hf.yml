@@ -1,0 +1,48 @@
+name: Sync to Hugging Face hub
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sync-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Check for large files (>10MB)
+        run: |
+          echo "Checking for files > 10MB in repository..."
+          git ls-tree -r -l --full-tree HEAD | awk '$4 >= 10485760 {print $0}' > /tmp/largefiles || true
+          if [ -s /tmp/largefiles ]; then
+            echo "ERROR: Found files larger than 10MB. List:"
+            cat /tmp/largefiles
+            exit 1
+          fi
+
+      - name: Configure git
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          # HF_USERNAME and HF_SPACE_NAME can be set from .hf-config or secrets
+        run: |
+          # Read config values from file
+          HF_USERNAME=$(grep '^HF_USERNAME=' .hf-config | cut -d'=' -f2)
+          HF_SPACE_NAME=$(grep '^HF_SPACE_NAME=' .hf-config | cut -d'=' -f2)
+
+          echo "Deploying to: https://huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME"
+
+          # Add space remote (ignore if exists)
+          git remote add space https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME || true
+
+          # Force push to the space
+          git push --force https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME main
