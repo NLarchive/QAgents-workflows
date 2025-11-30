@@ -4,11 +4,15 @@ emoji: ⚛️
 colorFrom: indigo
 colorTo: purple
 sdk: gradio
-sdk_version: 5.0.0
+sdk_version: 6.0.1
 app_file: app.py
 pinned: false
 license: mit
 short_description: Multi-agent quantum circuit generation with Gemini/LLMs
+tags:
+  - mcp-in-action-track-enterprise
+  - mcp-in-action-track-consumer
+  - mcp-in-action-track-creative 
 ---
 
 # QAgents-Workflows: Quantum Circuit Optimization Agent System
