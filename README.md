@@ -14,6 +14,8 @@ tags:
   - mcp-in-action-track-consumer
   - mcp-in-action-track-creative 
 ---
+# VIDEO: https://youtu.be/skqbaI25G7g
+# SOCIAL: https://www.linkedin.com/posts/nicolas-larenas_qagents-quantum-circuit-orchestrator-a-activity-7401019630393118720-ofPA?utm_source=share&utm_medium=member_desktop&rcm=ACoAADmu0wIBjvA0DVdHvqncNUVTEW72gbiGUps
 
 # QAgents-Workflows: Quantum Circuit Optimization Agent System
 
