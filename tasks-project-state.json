@@ -1,20 +1,22 @@
 {
   "project": "QAgents-Workflows",
-  "version": "0.9.1",
+  "version": "0.9.3",
   "description": "Multi-agent quantum circuit optimization system with chat UI and MCP integration",
   "last_updated": "2025-11-30",
-  "status": "MCP_CLIENT_TIMEOUT_FIX_APPLIED",
-  "notes": "Fixed MCP client timeout issues for HuggingFace Space cold starts. Increased timeouts (90s initial, 120s result), added retry logic with exponential backoff, added server warm-up function. Chat UI and MCP health monitor working. Local validation fallback for fast syntax checks.",
+  "status": "API_KEY_LOADING_FIXED",
+  "notes": "Fixed API key loading for HuggingFace Spaces. Now supports dynamic environment variable reading for Secrets. Added better error messages. Enhanced landing page with Getting Started tab, example questions, and clickable quick examples.",
 
   "recent_changes": {
     "2025-11-30": [
-      "Fixed timeout errors in mcp_client.py for HuggingFace Space cold starts",
-      "Increased INITIAL_TIMEOUT to 90s, RESULT_TIMEOUT to 120s",
-      "Added MAX_RETRIES=3 with exponential backoff",
-      "Added warm_up_server() method to MCPClient",
-      "Updated validate_syntax() to use local fallback first (faster)",
-      "Updated app.py health check functions with extended timeouts",
-      "Improved error messages to indicate cold start situations"
+      "Fixed API key loading issue - now dynamically reads from HF Space Secrets",
+      "Added get_api_key() method in LLMConfig for dynamic environment reading",
+      "Updated base_agent.py, orchestrator.py, quasar_orchestrator.py to use dynamic API key loading",
+      "Added clear error messages when API key is missing",
+      "Added new 'Getting Started' tab with comprehensive user guide",
+      "Added example questions organized by category (Beginner, Entanglement, Algorithms, Custom)",
+      "Added 8 clickable quick example buttons in Chat tab",
+      "Enhanced About tab with architecture diagram and detailed capabilities",
+      "Added prompt writing tips and output format documentation"
     ]
   },
 
@@ -42,13 +44,34 @@
   },
 
   "app_features": {
+    "getting_started_tab": {
+      "description": "User onboarding and guide",
+      "features": [
+        "Welcome message and overview",
+        "Prompt categories table",
+        "How to write good prompts",
+        "Output format explanation",
+        "Quick tips",
+        "Collapsible example sections (Beginner, Entanglement, Algorithms, Custom)"
+      ]
+    },
     "chat_tab": {
       "description": "Interactive chat UI for quantum circuit generation",
       "features": [
         "Natural language circuit requests",
+        "8 quick example buttons",
         "Multiple orchestration modes (naked, quasar, hybrid, blackboard)",
-        "Difficulty level selection",
         "Help and status commands"
+      ],
+      "quick_examples": [
+        "Bell State",
+        "GHZ State (3q)",
+        "QFT (4q)",
+        "Grover (2q)",
+        "Superposition",
+        "Teleportation",
+        "SWAP Gate",
+        "Custom CNOT"
       ]
     },
     "mcp_endpoints_tab": {
@@ -63,8 +86,40 @@
     },
     "quick_build_tab": {
       "description": "Direct circuit template generation",
-      "templates": ["bell_state", "ghz_state", "qft", "grover", "vqe", "superposition"]
+      "templates": ["bell_state", "ghz_state", "qft", "grover", "superposition"]
+    },
+    "about_tab": {
+      "description": "Detailed system information",
+      "features": [
+        "Architecture diagram",
+        "Capabilities table",
+        "Supported quantum operations",
+        "Component stack details"
+      ]
     }
+  },
+
+  "example_questions": {
+    "beginner": [
+      "Create a Bell state circuit",
+      "Put a qubit in superposition",
+      "Create a simple NOT gate on qubit 0"
+    ],
+    "entanglement": [
+      "Generate a 3-qubit GHZ state",
+      "Create a 4-qubit GHZ state with measurements",
+      "Build a W state for 3 qubits"
+    ],
+    "algorithms": [
+      "Create a 4-qubit QFT circuit",
+      "Build a 2-qubit Grover search circuit",
+      "Generate a quantum teleportation circuit"
+    ],
+    "custom": [
+      "Apply H gate to qubit 0, then CNOT from 0 to 1",
+      "Create a circuit with Rx(π/4) on qubit 0",
+      "Build a circuit that swaps qubit 0 and qubit 1"
+    ]
   },
 
   "mcp_endpoints": [
@@ -83,15 +138,6 @@
     {"name": "list_hardware", "category": "Documentation"},
     {"name": "list_templates", "category": "Documentation"}
   ],
-
-  "comprehensive_test_results": {
-    "test_date": "2024-11-29",
-    "previous_results": {
-      "naked": {"success": "9/9 (100%)", "avg_time_ms": 3929},
-      "guided": {"success": "7/9 (78%)", "avg_time_ms": 23120},
-      "blackboard": {"success": "2/9 (22%)", "avg_time_ms": 13507}
-    }
-  },
 
   "architectures": {
     "naked": {

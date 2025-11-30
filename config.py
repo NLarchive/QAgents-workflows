@@ -13,6 +13,15 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict
 import os
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # If python-dotenv is not installed, continue without loading .env
+    # (it will use system environment variables only)
+    pass
+
 # Paths
 PROJECT_ROOT = Path(__file__).parent
 QUANTUM_MCP_ROOT = PROJECT_ROOT.parent / "QuantumArchitect-MCP"
@@ -162,7 +171,8 @@ class LLMConfig:
     # Model identifier - reads from LLM_MODEL env var, falls back to "gemini-2.5-flash-lite"
     model: str = field(default_factory=lambda: os.getenv("LLM_MODEL", "gemini-2.5-flash-lite"))
     # API key - tries GOOGLE_API_KEY first (Gemini), then GENAI_API_KEY as fallback
-    api_key: Optional[str] = field(default_factory=lambda: os.getenv("GOOGLE_API_KEY") or os.getenv("GENAI_API_KEY"))
+    # Use None as default and fetch dynamically to support HuggingFace Spaces
+    api_key: Optional[str] = None
     temperature: float = 0.2
     max_tokens: int = 2000
 
@@ -173,6 +183,17 @@ class LLMConfig:
     # Multi-model fallback
     enable_fallback: bool = True  # Enable automatic model switching on rate limit
     fallback_on_error: bool = True  # Also fallback on API errors
+
+    def __post_init__(self):
+        """Initialize API key from environment if not set."""
+        if self.api_key is None:
+            # Try GOOGLE_API_KEY first, then GENAI_API_KEY
+            self.api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GENAI_API_KEY")
+
+    def get_api_key(self) -> Optional[str]:
+        """Get current API key, checking environment on each call for HF Spaces."""
+        # Always check environment first to support dynamic Secrets in HF Spaces
+        return os.getenv("GOOGLE_API_KEY") or os.getenv("GENAI_API_KEY") or self.api_key
 
     @property
     def model_string(self) -> str:

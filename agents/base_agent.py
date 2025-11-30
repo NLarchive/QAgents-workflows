@@ -145,10 +145,21 @@ class LLMAgent(BaseAgent):
             from config import config
             from agents.llm_adapter import get_llm_adapter
             
+            # Get API key dynamically (supports HF Spaces Secrets)
+            api_key = config.llm.get_api_key()
+            
+            if not api_key:
+                raise ValueError(
+                    "Missing API key! To use the Google AI API, provide api_key via:\n"
+                    "  1. GOOGLE_API_KEY environment variable (HF Spaces Secrets)\n"
+                    "  2. GENAI_API_KEY environment variable (fallback)\n"
+                    "  3. Set in .env file (local development)"
+                )
+            
             self._adapter = get_llm_adapter(
                 provider=config.llm.provider,
                 model=config.llm.model,
-                api_key=config.llm.api_key
+                api_key=api_key
             )
         return self._adapter
         

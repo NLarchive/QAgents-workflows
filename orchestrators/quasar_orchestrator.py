@@ -76,9 +76,21 @@ class QuasarOrchestrator:
         if self._llm is None:
             from agents.llm_adapter import get_llm_adapter
             from config import config
+            
+            # Get API key dynamically (supports HF Spaces Secrets)
+            api_key = config.llm.get_api_key()
+            
+            if not api_key:
+                raise ValueError(
+                    "Missing API key! To use the Google AI API, provide api_key via:\n"
+                    "  1. GOOGLE_API_KEY environment variable (HF Spaces Secrets)\n"
+                    "  2. GENAI_API_KEY environment variable (fallback)\n"
+                    "  3. Set in .env file (local development)"
+                )
+            
             self._llm = get_llm_adapter(
                 provider="gemini",
-                api_key=config.llm.api_key,
+                api_key=api_key,
                 enable_fallback=True
             )
         return self._llm

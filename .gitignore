@@ -25,9 +25,9 @@ wheels/
 venv/
 ENV/
 env/
-
-# Environment Variables
-.env  # Actual secrets - never commit
+ 
+# Environment Variables # Actual secrets - never commit
+.env  
 # .env.example IS committed as a template - do not exclude it
 
 # Database and Logs

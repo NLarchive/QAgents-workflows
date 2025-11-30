@@ -20,6 +20,13 @@ import requests
 import time
 from typing import Optional, List, Dict, Any
 
+# Load environment variables from .env file (for local development)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # Note: Gradio 6.0 doesn't support custom CSS in gr.Blocks()
 # UI styles module available but not used in this version
 
@@ -222,6 +229,32 @@ def quick_build_circuit(template: str, num_qubits: int) -> str:
         logger.error(f"Quick build error: {e}")
         return f"# Error: {str(e)}"
 # =============================================================================
+# EXAMPLE QUESTIONS FOR UI
+# =============================================================================
+
+EXAMPLE_QUESTIONS = [
+    # Basic circuits
+    {"category": "🌟 Beginner", "question": "Create a Bell state circuit", "description": "Classic 2-qubit entanglement"},
+    {"category": "🌟 Beginner", "question": "Put a qubit in superposition", "description": "Single Hadamard gate"},
+    {"category": "🌟 Beginner", "question": "Create a simple NOT gate on qubit 0", "description": "X gate application"},
+    
+    # Entanglement
+    {"category": "🔗 Entanglement", "question": "Generate a 3-qubit GHZ state", "description": "Greenberger-Horne-Zeilinger state"},
+    {"category": "🔗 Entanglement", "question": "Create a 4-qubit GHZ state with measurements", "description": "GHZ with classical bits"},
+    {"category": "🔗 Entanglement", "question": "Build a W state for 3 qubits", "description": "Another entangled state type"},
+    
+    # Algorithms
+    {"category": "⚙️ Algorithms", "question": "Create a 4-qubit QFT circuit", "description": "Quantum Fourier Transform"},
+    {"category": "⚙️ Algorithms", "question": "Build a 2-qubit Grover search circuit", "description": "Quantum search algorithm"},
+    {"category": "⚙️ Algorithms", "question": "Generate a quantum teleportation circuit", "description": "State teleportation protocol"},
+    
+    # Custom circuits
+    {"category": "🔧 Custom", "question": "Apply H gate to qubit 0, then CNOT from 0 to 1", "description": "Step-by-step gates"},
+    {"category": "🔧 Custom", "question": "Create a circuit with Rx(π/4) on qubit 0 and Ry(π/2) on qubit 1", "description": "Rotation gates"},
+    {"category": "🔧 Custom", "question": "Build a circuit that swaps qubit 0 and qubit 1", "description": "SWAP operation"},
+]
+
+# =============================================================================
 # GRADIO INTERFACE
 # =============================================================================
 
@@ -236,21 +269,136 @@ with gr.Blocks(title="QAgents - Quantum Circuit Assistant") as demo:
     
     with gr.Tabs():
         # =================================================================
+        # TAB 0: GETTING STARTED (NEW)
+        # =================================================================
+        with gr.TabItem("🚀 Getting Started"):
+            gr.Markdown("""
+## 👋 Welcome to QAgents!
+
+QAgents is an AI-powered assistant that generates **quantum circuits** from natural language descriptions.
+Just describe what you want, and the agent will produce valid **OpenQASM 2.0** code.
+
+---
+
+### 🎯 What Can I Ask?
+
+| Category | What You Can Request | Example |
+|----------|---------------------|---------|
+| **Basic Gates** | Single qubit operations | *"Apply a Hadamard gate to qubit 0"* |
+| **Entanglement** | Bell states, GHZ states | *"Create a Bell state"* |
+| **Algorithms** | QFT, Grover, Teleportation | *"Build a 4-qubit QFT"* |
+| **Custom Circuits** | Step-by-step gate sequences | *"Apply H to q0, then CNOT from q0 to q1"* |
+| **Measurements** | Circuits with classical output | *"Create a GHZ state with measurements"* |
+
+---
+
+### 📝 How to Write Good Prompts
+
+**✅ Be Specific:**
+- ✅ *"Create a 3-qubit GHZ state"* → Clear qubit count
+- ❌ *"Make something entangled"* → Too vague
+
+**✅ Mention Qubit Numbers:**
+- ✅ *"Apply CNOT from qubit 0 to qubit 1"* → Clear targets
+- ❌ *"Do a CNOT"* → Which qubits?
+
+**✅ Include Parameters for Rotation Gates:**
+- ✅ *"Apply Rx(π/4) to qubit 0"* → Clear angle
+- ❌ *"Rotate qubit 0"* → What angle?
+
+---
+
+### 🔧 Output Format
+
+The agent returns **OpenQASM 2.0** code that can be:
+- Copied and used in Qiskit, Cirq, or other quantum frameworks
+- Simulated on IBM Quantum, Amazon Braket, or local simulators
+- Validated and scored using the **Quick Build** or **MCP Health** tabs
+
+---
+
+### ⚡ Quick Tips
+
+| Tip | Description |
+|-----|-------------|
+| 💬 Type `help` | Show available commands |
+| 📊 Type `status` | Check MCP server connection |
+| 🛠️ Use Quick Build | Generate circuits from templates without typing |
+| 🔗 Check MCP Health | Verify backend tools are available |
+
+---
+
+### 🎮 Try These Examples
+
+Click any example below to copy it, then paste in the **Chat** tab:
+            """)
+            
+            # Display example questions in a nice format
+            with gr.Accordion("🌟 Beginner Examples", open=True):
+                gr.Markdown("""
+| Example Prompt | What It Does |
+|---------------|--------------|
+| `Create a Bell state circuit` | Creates the classic 2-qubit entangled state |
+| `Put a qubit in superposition` | Single Hadamard gate on qubit 0 |
+| `Create a simple NOT gate on qubit 0` | Applies X gate to flip the qubit |
+| `Apply Hadamard gates to qubits 0 and 1` | Parallel superposition |
+                """)
+            
+            with gr.Accordion("🔗 Entanglement Examples", open=False):
+                gr.Markdown("""
+| Example Prompt | What It Does |
+|---------------|--------------|
+| `Generate a 3-qubit GHZ state` | Creates a 3-qubit maximally entangled state |
+| `Create a 4-qubit GHZ state with measurements` | GHZ state + measurement on all qubits |
+| `Build a W state for 3 qubits` | Alternative entangled state with different properties |
+| `Create an entangled pair of qubits` | Simple Bell state (synonym) |
+                """)
+            
+            with gr.Accordion("⚙️ Algorithm Examples", open=False):
+                gr.Markdown("""
+| Example Prompt | What It Does |
+|---------------|--------------|
+| `Create a 4-qubit QFT circuit` | Quantum Fourier Transform for 4 qubits |
+| `Build a 2-qubit Grover search circuit` | Amplitude amplification algorithm |
+| `Generate a quantum teleportation circuit` | 3-qubit state teleportation protocol |
+| `Create an inverse QFT for 3 qubits` | Inverse Quantum Fourier Transform |
+                """)
+            
+            with gr.Accordion("🔧 Custom Circuit Examples", open=False):
+                gr.Markdown("""
+| Example Prompt | What It Does |
+|---------------|--------------|
+| `Apply H gate to qubit 0, then CNOT from 0 to 1` | Step-by-step gate application |
+| `Create a circuit with Rx(π/4) on qubit 0` | Rotation around X-axis |
+| `Build a circuit that swaps qubit 0 and qubit 1` | SWAP gate implementation |
+| `Apply T gate to qubit 0 and S gate to qubit 1` | Phase gates |
+| `Create a Toffoli gate on qubits 0, 1, 2` | Controlled-controlled-NOT |
+                """)
+            
+            gr.Markdown("""
+---
+
+### 🚀 Ready to Start?
+
+Head to the **💬 Chat** tab and try your first prompt!
+            """)
+        
+        # =================================================================
         # TAB 1: CHAT INTERFACE
         # =================================================================
         with gr.TabItem("💬 Chat"):
-            gr.Markdown("### Chat with Quantum Circuit Agent")
-            gr.Markdown("Ask me to create quantum circuits! Try: *'Create a Bell state'* or *'Generate a 3-qubit GHZ state'*")
+            gr.Markdown("### 💬 Chat with Quantum Circuit Agent")
+            gr.Markdown("Describe the quantum circuit you want to create in plain English!")
             
             chatbot = gr.Chatbot(
                 value=[],
-                height=400,
+                height=350,
                 label="Quantum Circuit Agent"
             )
             
             with gr.Row():
                 msg_input = gr.Textbox(
-                    placeholder="Ask me to create a quantum circuit...",
+                    placeholder="e.g., 'Create a Bell state' or 'Build a 3-qubit GHZ state'",
                     label="Your Message",
                     scale=4,
                     lines=1
@@ -261,6 +409,22 @@ with gr.Blocks(title="QAgents - Quantum Circuit Assistant") as demo:
                 clear_btn = gr.Button("🗑️ Clear", size="sm")
                 help_btn = gr.Button("❓ Help", size="sm")
                 status_btn = gr.Button("📊 Status", size="sm")
+            
+            # Example buttons section
+            gr.Markdown("---")
+            gr.Markdown("### ⚡ Quick Examples (click to use)")
+            
+            with gr.Row():
+                ex1_btn = gr.Button("🔔 Bell State", size="sm")
+                ex2_btn = gr.Button("🌀 GHZ State (3q)", size="sm")
+                ex3_btn = gr.Button("📐 QFT (4q)", size="sm")
+                ex4_btn = gr.Button("🔍 Grover (2q)", size="sm")
+            
+            with gr.Row():
+                ex5_btn = gr.Button("🌊 Superposition", size="sm")
+                ex6_btn = gr.Button("📡 Teleportation", size="sm")
+                ex7_btn = gr.Button("🔄 SWAP Gate", size="sm")
+                ex8_btn = gr.Button("🎛️ Custom CNOT", size="sm")
             
             # Chat handlers
             def respond(message: str, chat_history: List):
@@ -284,11 +448,28 @@ with gr.Blocks(title="QAgents - Quantum Circuit Assistant") as demo:
                 chat_history.append({"role": "assistant", "content": status_text})
                 return chat_history
             
+            # Example button handlers - each returns the example text and triggers the chat
+            def use_example(example_text: str, chat_history: List):
+                bot_response = chat_response(example_text, chat_history)
+                chat_history.append({"role": "user", "content": example_text})
+                chat_history.append({"role": "assistant", "content": bot_response})
+                return chat_history
+            
             send_btn.click(respond, [msg_input, chatbot], [msg_input, chatbot])
             msg_input.submit(respond, [msg_input, chatbot], [msg_input, chatbot])
             clear_btn.click(lambda: [], outputs=[chatbot])
             help_btn.click(show_help, [chatbot], [chatbot])
             status_btn.click(show_status, [chatbot], [chatbot])
+            
+            # Wire up example buttons
+            ex1_btn.click(lambda h: use_example("Create a Bell state circuit", h), [chatbot], [chatbot])
+            ex2_btn.click(lambda h: use_example("Generate a 3-qubit GHZ state", h), [chatbot], [chatbot])
+            ex3_btn.click(lambda h: use_example("Create a 4-qubit QFT circuit", h), [chatbot], [chatbot])
+            ex4_btn.click(lambda h: use_example("Build a 2-qubit Grover search circuit", h), [chatbot], [chatbot])
+            ex5_btn.click(lambda h: use_example("Put 2 qubits in superposition", h), [chatbot], [chatbot])
+            ex6_btn.click(lambda h: use_example("Generate a quantum teleportation circuit", h), [chatbot], [chatbot])
+            ex7_btn.click(lambda h: use_example("Build a circuit that swaps qubit 0 and qubit 1", h), [chatbot], [chatbot])
+            ex8_btn.click(lambda h: use_example("Apply H gate to qubit 0, then CNOT from 0 to 1", h), [chatbot], [chatbot])
         
         # =================================================================
         # TAB 2: MCP ENDPOINTS HEALTH
@@ -364,29 +545,87 @@ with gr.Blocks(title="QAgents - Quantum Circuit Assistant") as demo:
             build_btn.click(quick_build_circuit, [template_select, qubits_slider], [qasm_output])
         
         # =================================================================
-        # TAB 4: ABOUT
+        # TAB 5: ABOUT
         # =================================================================
         with gr.TabItem("ℹ️ About"):
             gr.Markdown("""
-            ## ℹ️ About QAgents
-            
-            **QAgents** is a multi-agent system for quantum circuit generation.
-            
-            ### 🏗️ How it Works
-            
-            1. **You ask** for a quantum circuit in natural language
-            2. **NAKED mode** uses an LLM to generate OpenQASM code directly
-            3. **MCP tools** validate and simulate your circuits
-            
-            ### 🔗 Architecture
-            
-            - **Frontend**: This Gradio app (QAgents-Workflows)
-            - **Backend**: QuantumArchitect-MCP on HuggingFace
-            - **LLM**: Gemini 2.5 Flash (configurable)
-            
-            ### 📝 License
-            
-            MIT License - Feel free to use and modify!
+## ℹ️ About QAgents
+
+**QAgents** is a multi-agent system for quantum circuit generation using natural language.
+
+---
+
+### 🏗️ How it Works
+
+```
+┌─────────────────┐     ┌──────────────┐     ┌─────────────────────┐
+│   Your Prompt   │ ──► │  LLM Agent   │ ──► │  OpenQASM 2.0 Code  │
+│  (Plain Text)   │     │ (NAKED Mode) │     │                     │
+└─────────────────┘     └──────────────┘     └─────────────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │  MCP Tools       │
+                    │  - Validate      │
+                    │  - Simulate      │
+                    │  - Score         │
+                    └──────────────────┘
+```
+
+1. **You describe** the quantum circuit you want in natural language
+2. **NAKED mode** uses an LLM to generate valid OpenQASM 2.0 code directly
+3. **MCP tools** can validate, simulate, and score your circuits
+
+---
+
+### 🎯 Capabilities
+
+| Feature | Description |
+|---------|-------------|
+| **Circuit Generation** | Create circuits from descriptions |
+| **Standard Gates** | H, X, Y, Z, S, T, Rx, Ry, Rz, CNOT, CZ, SWAP, Toffoli |
+| **Templates** | Bell states, GHZ, QFT, Grover, Teleportation |
+| **Output Format** | OpenQASM 2.0 (compatible with Qiskit, Cirq, etc.) |
+| **Validation** | Syntax and semantic validation via MCP |
+
+---
+
+### 🔗 Architecture
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Frontend** | Gradio 6.0 | This UI you're using |
+| **Orchestrator** | QAgents-Workflows | Agent coordination |
+| **LLM** | Gemini 2.5 Flash | Code generation |
+| **Backend** | QuantumArchitect-MCP | Validation & simulation |
+
+---
+
+### 📖 Supported Quantum Operations
+
+**Single-Qubit Gates:**
+- `H` (Hadamard), `X`, `Y`, `Z` (Pauli gates)
+- `S`, `T`, `Sdg`, `Tdg` (Phase gates)
+- `Rx(θ)`, `Ry(θ)`, `Rz(θ)` (Rotation gates)
+
+**Multi-Qubit Gates:**
+- `CNOT/CX` (Controlled-NOT)
+- `CZ` (Controlled-Z)
+- `SWAP` (Swap two qubits)
+- `CCX/Toffoli` (Controlled-Controlled-NOT)
+
+---
+
+### 📝 License
+
+MIT License - Feel free to use and modify!
+
+---
+
+### 🔗 Links
+
+- **QAgents-Workflows**: Frontend orchestration
+- **QuantumArchitect-MCP**: Backend quantum tools
             """)
 
 # Launch for HuggingFace Spaces
