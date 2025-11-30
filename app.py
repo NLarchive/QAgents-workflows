@@ -234,7 +234,6 @@ with gr.Blocks(title="QAgents - Quantum Circuit Assistant") as demo:
             chatbot = gr.Chatbot(
                 value=[],
                 height=400,
-                type="messages",
                 label="Quantum Circuit Agent"
             )
             
