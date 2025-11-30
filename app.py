@@ -290,8 +290,7 @@ CUSTOM_CSS = """
 """
 
 with gr.Blocks(
-    title="QAgents - Quantum Circuit Assistant",
-    css=CUSTOM_CSS
+    title="QAgents - Quantum Circuit Assistant"
 ) as demo:
     
     # Header
@@ -314,8 +313,6 @@ with gr.Blocks(
                         label="Quantum Circuit Agent",
                         height=500,
                         show_label=True,
-                        avatar_images=(None, "https://em-content.zobj.net/source/twitter/376/atom-symbol_269b.png"),
-                        bubble_full_width=False,
                     )
                     
                     with gr.Row():
@@ -567,4 +564,5 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         show_error=True,
         mcp_server=True,
+        css=CUSTOM_CSS,
     )
