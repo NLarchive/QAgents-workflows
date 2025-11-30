@@ -1,6 +1,7 @@
 google-genai>=0.6.0
-litellm>=1.42.0
-requests>=2.31.0
+litellm>=1.42.0     
+requests>=2.31.0    
 python-dotenv>=1.0.0
-pydantic>=2.0.0
+pydantic>=2.0.0     
 gradio>=4.0.0
+huggingface_hub<0.20.0
