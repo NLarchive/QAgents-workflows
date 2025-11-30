@@ -100,7 +100,7 @@ with gr.Blocks(title="Quantum Circuit Orchestrator") as demo:
             generate_btn = gr.Button("Generate Circuit", variant="primary")
             
         with gr.Column(scale=1):
-            mcp_status = gr.Textbox(label="MCP Server Status", value=check_mcp_status, interactive=False)
+            mcp_status = gr.Textbox(label="MCP Server Status", value="⏳ Initializing...", interactive=False)
             metrics_output = gr.Textbox(label="Execution Metrics", lines=4)
     
     with gr.Row():
