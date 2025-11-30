@@ -1,9 +1,11 @@
 """
 QAgents-Workflows: Hugging Face Space Entry Point
 Path: QAgents-workflows/app.py
-Related: client/mcp_client.py (MCP connection), orchestrators/ (agent orchestration)
+Related: ui/ module for Gradio components
+         client/mcp_client.py (MCP connection)
+         orchestrators/ (agent orchestration)
 
-Provides a Gradio interface with:
+Provides a Gradio 6.0 compatible interface with:
 - Chat UI for interacting with quantum circuit agents (NAKED mode)
 - MCP Endpoints health monitoring tab
 - Circuit generation and validation tools
@@ -17,6 +19,16 @@ import logging
 import requests
 import time
 from typing import Optional, List, Dict, Any
+
+# =============================================================================
+# TRY TO IMPORT UI MODULE (provides modular components)
+# =============================================================================
+try:
+    from ui.styles import CUSTOM_CSS
+    UI_STYLES_AVAILABLE = True
+except ImportError:
+    CUSTOM_CSS = ""
+    UI_STYLES_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -214,7 +226,7 @@ def quick_build_circuit(template: str, num_qubits: int) -> str:
 # GRADIO INTERFACE
 # =============================================================================
 
-with gr.Blocks(title="QAgents - Quantum Circuit Assistant") as demo:
+with gr.Blocks(title="QAgents - Quantum Circuit Assistant", css=CUSTOM_CSS if UI_STYLES_AVAILABLE else None) as demo:
     
     # Header
     gr.Markdown("""
