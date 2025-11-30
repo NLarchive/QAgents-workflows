@@ -1,14 +1,18 @@
 # Path: QAgents-workflows/ui/mcp_health.py
 # Relations: Uses client/mcp_client.py for health checks
 #            Used by __init__.py, app.py, chat_components.py
-# Description: MCP health monitoring UI components
+# Description: MCP health monitoring UI components with extended timeouts
+#              for HuggingFace Space cold starts
 """
 MCP Health Components: Monitor QuantumArchitect-MCP endpoint availability.
 
 Provides:
-- Server health check
+- Server health check with extended timeout for cold starts
 - Individual endpoint health checks
 - Health status table display
+
+Note: HuggingFace Spaces go to sleep after inactivity. First request may
+      take 30-60 seconds while the server wakes up (cold start).
 """
 
 import os

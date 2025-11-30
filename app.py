@@ -69,15 +69,16 @@ MCP_ENDPOINTS = [
 # =============================================================================
 
 def check_mcp_health() -> str:
-    """Check overall MCP server health."""
+    """Check overall MCP server health with extended timeout for cold starts."""
     try:
-        response = requests.get(f"{MCP_SERVER_URL}/", timeout=10)
+        # Extended timeout to handle HuggingFace Space cold starts (up to 60s)
+        response = requests.get(f"{MCP_SERVER_URL}/", timeout=60)
         if response.status_code == 200:
             return f"🟢 **Connected** to MCP Server"
         else:
             return f"🟡 **Partial** - Status {response.status_code}"
     except requests.exceptions.Timeout:
-        return "🟠 **Timeout** - Server slow to respond"
+        return "🟠 **Timeout** - Server may be starting up (cold start can take 30-60s)"
     except requests.exceptions.ConnectionError:
         return "🔴 **Disconnected** - Cannot reach server"
     except Exception as e:
@@ -85,13 +86,14 @@ def check_mcp_health() -> str:
 
 
 def check_endpoint_health(endpoint_name: str) -> Dict:
-    """Check health of a specific MCP endpoint."""
+    """Check health of a specific MCP endpoint with extended timeout."""
     start = time.perf_counter()
     try:
         url = f"{MCP_SERVER_URL}/gradio_api/call/ui_{endpoint_name}"
-        response = requests.post(url, json={"data": []}, timeout=15)
+        # Extended timeout for HuggingFace Space cold starts
+        response = requests.post(url, json={"data": []}, timeout=90)
         elapsed = (time.perf_counter() - start) * 1000
-        
+
         if response.status_code == 200:
             return {"status": "🟢", "latency_ms": round(elapsed, 1), "error": None}
         elif response.status_code == 404:
@@ -99,12 +101,11 @@ def check_endpoint_health(endpoint_name: str) -> Dict:
         else:
             return {"status": "🟠", "latency_ms": round(elapsed, 1), "error": f"HTTP {response.status_code}"}
     except requests.exceptions.Timeout:
-        return {"status": "🟠", "latency_ms": 15000, "error": "Timeout"}
+        elapsed = (time.perf_counter() - start) * 1000
+        return {"status": "🟠", "latency_ms": round(elapsed, 1), "error": "Timeout (server may be cold)"}
     except Exception as e:
         elapsed = (time.perf_counter() - start) * 1000
         return {"status": "🔴", "latency_ms": round(elapsed, 1), "error": str(e)[:50]}
-
-
 def get_all_endpoints_health() -> str:
     """Get health status of all MCP endpoints as formatted markdown."""
     output_lines = [
@@ -200,21 +201,26 @@ I can help you with quantum circuits! Try asking me to:
 # =============================================================================
 
 def quick_build_circuit(template: str, num_qubits: int) -> str:
-    """Generate a circuit from template using MCP client."""
+    """Generate a circuit from template using MCP client with retry and fallback."""
     try:
         from client.mcp_client import get_client
         mcp_client = get_client(MCP_SERVER_URL)
-        result = mcp_client.create_circuit_from_template(template, int(num_qubits))
         
+        # Try to warm up server first (handles HF Space cold start)
+        if not mcp_client._server_warmed:
+            logger.info("Warming up MCP server...")
+            mcp_client.warm_up_server()
+        
+        result = mcp_client.create_circuit_from_template(template, int(num_qubits))
+
         if result.success and result.data:
             if isinstance(result.data, dict) and 'qasm' in result.data:
                 return result.data['qasm']
             return str(result.data)
         return f"# Error: {result.error or 'Unknown error'}"
     except Exception as e:
+        logger.error(f"Quick build error: {e}")
         return f"# Error: {str(e)}"
-
-
 # =============================================================================
 # GRADIO INTERFACE
 # =============================================================================

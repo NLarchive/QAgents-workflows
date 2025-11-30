@@ -1,14 +1,16 @@
 # Path: QAgents-workflows/ui/quick_build.py
 # Relations: Uses client/mcp_client.py for circuit generation
 #            Used by __init__.py, app.py
-# Description: Quick circuit builder UI components
+# Description: Quick circuit builder UI components with improved error handling
 """
 Quick Build Components: Fast circuit generation from templates.
 
 Provides:
 - Template selection dropdown
 - Qubit count slider
-- Circuit generation via MCP client
+- Circuit generation via MCP client with retry and fallback
+
+Note: First request may take longer if MCP server needs to wake up (cold start).
 """
 
 import os

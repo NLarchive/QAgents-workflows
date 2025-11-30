@@ -1,6 +1,7 @@
-# Path: QAgents-workflos/client/mcp_client.py
-# Relations: Uses QuantumArchitect-MCP Gradio server
+# Path: QAgents-workflows/client/mcp_client.py
+# Relations: Uses QuantumArchitect-MCP Gradio server (HuggingFace Space)
 # Description: MCP client with fallback local implementations for missing endpoints
+#              Includes retry logic and extended timeouts for HF Space cold starts
 """
 MCP Client: Connection to QuantumArchitect-MCP endpoints.
 Provides both synchronous and async interfaces.
@@ -12,6 +13,11 @@ Available Gradio endpoints (as of latest scan):
 - ui_score_circuit: Score circuit complexity/fitness
 
 Missing endpoints use local fallback implementations.
+
+HuggingFace Space Considerations:
+- Spaces go to sleep after inactivity (cold start takes 30-60s)
+- Extended timeouts and retry logic handle this gracefully
+- Local fallback used when MCP server is unreachable
 """
 
 import requests
@@ -24,8 +30,18 @@ import re
 import time
 import random
 import math
+import os
 
 logger = logging.getLogger(__name__)
+
+# Default MCP Server URL (HuggingFace Space)
+DEFAULT_MCP_URL = "https://mcp-1st-birthday-quantumarchitect-mcp.hf.space"
+
+# Timeout settings for HuggingFace Spaces
+INITIAL_TIMEOUT = 90   # First request - allow cold start time
+RESULT_TIMEOUT = 120   # Result retrieval - allow processing time
+HEALTH_TIMEOUT = 30    # Health check timeout
+MAX_RETRIES = 3        # Number of retries for transient failures
 
 
 @dataclass
@@ -227,70 +243,139 @@ class MCPClient:
     """
     Client for QuantumArchitect-MCP server.
     Wraps MCP endpoints with fallback to local implementations.
-    
+
     Primary endpoints (from Gradio):
     - ui_create_circuit
     - ui_validate_circuit
     - ui_simulate_circuit
     - ui_score_circuit
-    
+
     Missing endpoints use QASMLocalAnalyzer for fallback.
+    
+    Features:
+    - Extended timeouts for HuggingFace Space cold starts
+    - Automatic retry with exponential backoff
+    - Server warm-up before first request
+    - Graceful fallback to local implementations
     """
 
-    def __init__(self, base_url: str = "http://127.0.0.1:7861"):
+    def __init__(self, base_url: str = None):
+        if base_url is None:
+            base_url = os.environ.get("MCP_SERVER_URL", DEFAULT_MCP_URL)
         self.base_url = base_url.rstrip("/")
         self.session = requests.Session()
         self._connected = False
         self._analyzer = QASMLocalAnalyzer()
+        self._server_warmed = False
+        logger.info(f"MCPClient initialized with base_url: {self.base_url}")
+
+    def warm_up_server(self) -> bool:
+        """
+        Wake up HuggingFace Space before making requests.
+        Spaces go to sleep after inactivity and need time to start.
+        
+        Returns:
+            True if server is warmed up and ready
+        """
+        if self._server_warmed:
+            return True
+            
+        logger.info(f"Warming up MCP server at {self.base_url}...")
+        
+        for attempt in range(MAX_RETRIES):
+            try:
+                # Simple GET to wake up the server
+                response = self.session.get(
+                    f"{self.base_url}/",
+                    timeout=INITIAL_TIMEOUT
+                )
+                if response.status_code == 200:
+                    self._server_warmed = True
+                    self._connected = True
+                    logger.info("MCP server is ready")
+                    return True
+            except requests.exceptions.Timeout:
+                logger.warning(f"Warm-up attempt {attempt + 1}/{MAX_RETRIES} timed out, retrying...")
+            except requests.exceptions.ConnectionError as e:
+                logger.warning(f"Warm-up attempt {attempt + 1}/{MAX_RETRIES} connection error: {e}")
+            except Exception as e:
+                logger.warning(f"Warm-up attempt {attempt + 1}/{MAX_RETRIES} failed: {e}")
+            
+            if attempt < MAX_RETRIES - 1:
+                wait_time = 2 ** attempt  # 1s, 2s, 4s
+                time.sleep(wait_time)
+        
+        logger.warning("Failed to warm up MCP server, will use local fallback")
+        return False
 
     def _call(self, endpoint: str, **kwargs) -> MCPResponse:
-        """Internal method to call MCP endpoints."""
+        """Internal method to call MCP endpoints with retry logic."""
         start = time.perf_counter()
-
-        try:
-            url = f"{self.base_url}/gradio_api/call/{endpoint}"
-            payload = {"data": list(kwargs.values()) if kwargs else []}
+        last_error = None
+        
+        for attempt in range(MAX_RETRIES):
+            try:
+                return self._call_once(endpoint, start, **kwargs)
+            except requests.exceptions.Timeout as e:
+                last_error = f"Timeout after {INITIAL_TIMEOUT}s"
+                logger.warning(f"MCP call {endpoint} attempt {attempt + 1}/{MAX_RETRIES} timed out")
+            except requests.exceptions.ConnectionError as e:
+                last_error = f"Connection error: {e}"
+                logger.warning(f"MCP call {endpoint} attempt {attempt + 1}/{MAX_RETRIES} connection error")
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(f"MCP call {endpoint} attempt {attempt + 1}/{MAX_RETRIES} failed: {e}")
             
-            response = self.session.post(url, json=payload, timeout=30)
-            response.raise_for_status()
+            if attempt < MAX_RETRIES - 1:
+                wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+                time.sleep(wait_time)
+        
+        # All retries failed
+        elapsed = (time.perf_counter() - start) * 1000
+        logger.error(f"MCP call {endpoint} failed after {MAX_RETRIES} attempts: {last_error}")
+        return MCPResponse(
+            success=False,
+            data=None,
+            endpoint=endpoint,
+            error=last_error,
+            execution_time_ms=elapsed
+        )
 
-            result = response.json()
-            event_id = result.get("event_id")
+    def _call_once(self, endpoint: str, start: float, **kwargs) -> MCPResponse:
+        """Single attempt to call an MCP endpoint."""
+        url = f"{self.base_url}/gradio_api/call/{endpoint}"
+        payload = {"data": list(kwargs.values()) if kwargs else []}
 
-            if event_id:
-                result_url = f"{self.base_url}/gradio_api/call/{endpoint}/{event_id}"
-                result_response = self.session.get(result_url, timeout=30)
+        logger.debug(f"Calling MCP endpoint: {url}")
+        response = self.session.post(url, json=payload, timeout=INITIAL_TIMEOUT)
+        response.raise_for_status()
 
-                lines = result_response.text.strip().split("\n")
-                for line in lines:
-                    if line.startswith("data:"):
-                        data = json.loads(line[5:].strip())
-                        elapsed = (time.perf_counter() - start) * 1000
-                        return MCPResponse(
-                            success=True,
-                            data=data[0] if isinstance(data, list) and len(data) == 1 else data,
-                            endpoint=endpoint,
-                            execution_time_ms=elapsed
-                        )
+        result = response.json()
+        event_id = result.get("event_id")
 
-            elapsed = (time.perf_counter() - start) * 1000
-            return MCPResponse(
-                success=True,
-                data=result,
-                endpoint=endpoint,
-                execution_time_ms=elapsed
-            )
+        if event_id:
+            result_url = f"{self.base_url}/gradio_api/call/{endpoint}/{event_id}"
+            result_response = self.session.get(result_url, timeout=RESULT_TIMEOUT)
 
-        except Exception as e:
-            elapsed = (time.perf_counter() - start) * 1000
-            logger.warning(f"MCP call failed: {endpoint} - {e}")
-            return MCPResponse(
-                success=False,
-                data=None,
-                endpoint=endpoint,
-                error=str(e),
-                execution_time_ms=elapsed
-            )
+            lines = result_response.text.strip().split("\n")
+            for line in lines:
+                if line.startswith("data:"):
+                    data = json.loads(line[5:].strip())
+                    elapsed = (time.perf_counter() - start) * 1000
+                    return MCPResponse(
+                        success=True,
+                        data=data[0] if isinstance(data, list) and len(data) == 1 else data,
+                        endpoint=endpoint,
+                        execution_time_ms=elapsed
+                    )
+
+        elapsed = (time.perf_counter() - start) * 1000
+        return MCPResponse(
+            success=True,
+            data=result,
+            endpoint=endpoint,
+            execution_time_ms=elapsed
+        )
 
     def _fallback_response(self, endpoint: str, data: Any, start_time: float) -> MCPResponse:
         """Create a fallback response using local implementation."""
@@ -306,10 +391,15 @@ class MCPClient:
     def health_check(self) -> bool:
         """Check if MCP server is reachable."""
         try:
-            response = self.session.get(f"{self.base_url}/", timeout=5)
+            response = self.session.get(f"{self.base_url}/", timeout=HEALTH_TIMEOUT)
             self._connected = response.status_code == 200
             return self._connected
-        except:
+        except requests.exceptions.Timeout:
+            logger.warning(f"Health check timed out after {HEALTH_TIMEOUT}s")
+            self._connected = False
+            return False
+        except Exception as e:
+            logger.warning(f"Health check failed: {e}")
             self._connected = False
             return False
 
@@ -399,8 +489,27 @@ class MCPClient:
 
     # ===== Validation Endpoints =====
 
-    def validate_syntax(self, qasm_code: str) -> MCPResponse:
-        """Validate QASM syntax. Maps to ui_validate_circuit."""
+    def validate_syntax(self, qasm_code: str, use_local_first: bool = True) -> MCPResponse:
+        """
+        Validate QASM syntax.
+        
+        Args:
+            qasm_code: The QASM code to validate
+            use_local_first: If True, use fast local validation first
+            
+        Returns:
+            Validation result with any syntax errors
+        """
+        # Try local validation first (fast, no network)
+        if use_local_first:
+            start = time.perf_counter()
+            local_result = self._analyzer.validate_syntax(qasm_code)
+            if local_result['valid']:
+                return self._fallback_response("validate_syntax", local_result, start)
+            # If local validation found errors, still return them quickly
+            return self._fallback_response("validate_syntax", local_result, start)
+        
+        # Use MCP server for full validation
         return self._call("ui_validate_circuit", qasm=qasm_code, hardware="")
 
     def check_connectivity(self, qasm_code: str, hardware: str = "ibm_brisbane") -> MCPResponse:
@@ -687,15 +796,22 @@ def get_client(base_url: Optional[str] = None) -> MCPClient:
 
     Args:
         base_url: Optional URL override. If None, checks MCP_SERVER_URL env var,
-                  then defaults to the HuggingFace Space URL
+                 then defaults to the HuggingFace Space URL
+
+    Returns:
+        MCPClient instance connected to the MCP server
     """
     global _client
     if _client is None:
         if base_url is None:
-            import os
-            base_url = os.environ.get(
-                "MCP_SERVER_URL", 
-                "https://mcp-1st-birthday-quantumarchitect-mcp.hf.space"
-            )
+            base_url = os.environ.get("MCP_SERVER_URL", DEFAULT_MCP_URL)
         _client = MCPClient(base_url)
+        logger.info(f"Created MCP client for: {base_url}")
     return _client
+
+
+def reset_client():
+    """Reset the singleton client (useful for testing or reconnection)."""
+    global _client
+    _client = None
+    logger.info("MCP client reset")

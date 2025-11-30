@@ -1,16 +1,44 @@
 {
   "project": "QAgents-Workflows",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Multi-agent quantum circuit optimization system with chat UI and MCP integration",
   "last_updated": "2025-11-30",
-  "status": "CHAT_UI_AND_MCP_HEALTH_MONITOR_ADDED",
-  "notes": "Added Gradio chat interface for agent interaction. Added MCP endpoints health monitor tab. Updated MCP client to connect to HuggingFace Space. Removed unsupported Blocks theme argument to restore runtime compatibility on Gradio 6.",
+  "status": "MCP_CLIENT_TIMEOUT_FIX_APPLIED",
+  "notes": "Fixed MCP client timeout issues for HuggingFace Space cold starts. Increased timeouts (90s initial, 120s result), added retry logic with exponential backoff, added server warm-up function. Chat UI and MCP health monitor working. Local validation fallback for fast syntax checks.",
+
+  "recent_changes": {
+    "2025-11-30": [
+      "Fixed timeout errors in mcp_client.py for HuggingFace Space cold starts",
+      "Increased INITIAL_TIMEOUT to 90s, RESULT_TIMEOUT to 120s",
+      "Added MAX_RETRIES=3 with exponential backoff",
+      "Added warm_up_server() method to MCPClient",
+      "Updated validate_syntax() to use local fallback first (faster)",
+      "Updated app.py health check functions with extended timeouts",
+      "Improved error messages to indicate cold start situations"
+    ]
+  },
 
   "huggingface_deployment": {
     "qagents_space": "https://huggingface.co/spaces/NLarchive/Qagents-workflows",
     "mcp_server_space": "https://mcp-1st-birthday-quantumarchitect-mcp.hf.space",
+    "mcp_sse_endpoint": "https://mcp-1st-birthday-quantumarchitect-mcp.hf.space/gradio_api/mcp/sse",
     "gradio_version": "6.0.0",
-    "mcp_enabled": true
+    "mcp_enabled": true,
+    "cold_start_note": "HF Spaces go to sleep after inactivity. First request may take 30-60s."
+  },
+
+  "mcp_client_config": {
+    "default_url": "https://mcp-1st-birthday-quantumarchitect-mcp.hf.space",
+    "initial_timeout_s": 90,
+    "result_timeout_s": 120,
+    "health_timeout_s": 30,
+    "max_retries": 3,
+    "features": [
+      "Extended timeouts for cold starts",
+      "Retry with exponential backoff",
+      "Server warm-up before first request",
+      "Local fallback for validation"
+    ]
   },
 
   "app_features": {
@@ -29,7 +57,8 @@
         "Check all endpoints health",
         "Individual endpoint testing",
         "Latency monitoring",
-        "Status indicators (🟢🟡🟠🔴)"
+        "Status indicators (🟢🟡🟠🔴)",
+        "Extended timeouts for cold starts"
       ]
     },
     "quick_build_tab": {
