@@ -104,7 +104,7 @@ with gr.Blocks(title="Quantum Circuit Orchestrator") as demo:
             metrics_output = gr.Textbox(label="Execution Metrics", lines=4)
     
     with gr.Row():
-        qasm_output = gr.Code(label="Generated QASM", language="qasm", lines=15)
+        qasm_output = gr.Code(label="Generated QASM", language="python", lines=15)
 
     # Event handlers
     generate_btn.click(
