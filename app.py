@@ -291,10 +291,6 @@ CUSTOM_CSS = """
 
 with gr.Blocks(
     title="QAgents - Quantum Circuit Assistant",
-    theme=gr.themes.Soft(
-        primary_hue="blue",
-        secondary_hue="purple",
-    ),
     css=CUSTOM_CSS
 ) as demo:
     

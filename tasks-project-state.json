@@ -2,9 +2,9 @@
   "project": "QAgents-Workflows",
   "version": "0.9.0",
   "description": "Multi-agent quantum circuit optimization system with chat UI and MCP integration",
-  "last_updated": "2024-11-30",
+  "last_updated": "2025-11-30",
   "status": "CHAT_UI_AND_MCP_HEALTH_MONITOR_ADDED",
-  "notes": "Added Gradio chat interface for agent interaction. Added MCP endpoints health monitor tab. Updated MCP client to connect to HuggingFace Space.",
+  "notes": "Added Gradio chat interface for agent interaction. Added MCP endpoints health monitor tab. Updated MCP client to connect to HuggingFace Space. Removed unsupported Blocks theme argument to restore runtime compatibility on Gradio 6.",
 
   "huggingface_deployment": {
     "qagents_space": "https://huggingface.co/spaces/NLarchive/Qagents-workflows",
