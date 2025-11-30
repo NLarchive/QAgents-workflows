@@ -37,15 +37,15 @@ jobs:
           # Read the common space name from the local config file
           HF_SPACE_NAME=$(grep '^HF_SPACE_NAME=' .hf-config | cut -d'=' -f2)
 
-          # --- Target 1: MCPNLarchive ---
-          HF_USER_1="MCPNLarchive"
+          # --- Target 1: NLarchive ---
+          HF_USER_1="NLarchive"
           echo "Deploying to Space 1: https://huggingface.co/spaces/$HF_USER_1/$HF_SPACE_NAME"
           git remote add space1 "https://$HF_USER_1:$HF_TOKEN@huggingface.co/spaces/$HF_USER_1/$HF_SPACE_NAME" || true
           git push --force space1 main
           echo "Successfully deployed to Space 1."
 
-          # --- Target 2: MCPMCP-1st-Birthday ---
-          HF_USER_2="MCPMCP-1st-Birthday"
+          # --- Target 2: MCP-1st-Birthday ---
+          HF_USER_2="MCP-1st-Birthday"
           echo "Deploying to Space 2: https://huggingface.co/spaces/$HF_USER_2/$HF_SPACE_NAME"
           git remote add space2 "https://$HF_USER_2:$HF_TOKEN@huggingface.co/spaces/$HF_USER_2/$HF_SPACE_NAME" || true
           git push --force space2 main
