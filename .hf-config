@@ -1,4 +1,4 @@
 # HF Space Configuration
 # Used by GitHub Actions workflow
 HF_USERNAME=NLarchive
-HF_SPACE_NAME=my-webapp-hf
+HF_SPACE_NAME=QAgents-workflows
