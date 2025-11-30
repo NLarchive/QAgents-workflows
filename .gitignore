@@ -44,7 +44,7 @@ database/memory/
 
 # Project specific
 research/
-
+tests/
 # Legacy/Backup files
 *_old.py
 *.bak
